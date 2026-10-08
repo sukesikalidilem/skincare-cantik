@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kasir Skincare Profesional</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #struk-cetak, #struk-cetak * { visibility: visible; }
+      #struk-cetak { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans">
+  <div class="flex flex-col lg:flex-row h-screen">
+    <!-- Area Produk -->
+    <div class="lg:w-2/3 p-6 flex flex-col h-full overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-slate-800"><i class="fas fa-pump-soap text-rose-500 mr-2"></i>GlowPOS - Skincare Kasir</h1>
+        <input type="text" id="search-input" onkeyup="filterProduk()" placeholder="Cari skincare..." class="px-4 py-2 border rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-rose-400">
+      </div>
+
+      <!-- Kategori Filter -->
+      <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <button onclick="filterKategori('semua')" class="px-4 py-2 bg-rose-500 text-white rounded-full text-sm font-semibold hover:bg-rose-600">Semua</button>
+        <button onclick="filterKategori('Cleanser')" class="px-4 py-2 bg-white text-slate-600 rounded-full text-sm font-semibold hover:bg-rose-100">Cleanser</button>
+        <button onclick="filterKategori('Serum')" class="px-4 py-2 bg-white text-slate-600 rounded-full text-sm font-semibold hover:bg-rose-100">Serum</button>
+        <button onclick="filterKategori('Moisturizer')" class="px-4 py-2 bg-white text-slate-600 rounded-full text-sm font-semibold hover:bg-rose-100">Moisturizer</button>
+        <button onclick="filterKategori('Sunscreen')" class="px-4 py-2 bg-white text-slate-600 rounded-full text-sm font-semibold hover:bg-rose-100">Sunscreen</button>
+      </div>
+
+      <!-- Grid Produk -->
+      <div id="produk-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <!-- Card produk di-generate via JS -->
+      </div>
+    </div>
+
+    <!-- Area Kasir & Keranjang -->
+    <div class="lg:w-1/3 bg-white p-6 shadow-xl flex flex-col justify-between h-full">
+      <div>
+        <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2"><i class="fas fa-shopping-bag text-rose-500 mr-2"></i>Keranjang Belanja</h2>
+        <div id="keranjang-list" class="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+          <p class="text-slate-400 text-center py-8">Keranjang masih kosong</p>
+        </div>
+      </div>
+
+      <!-- Ringkasan Pembayaran -->
+      <div class="border-t pt-4 mt-4 space-y-3">
+        <div class="flex justify-between text-slate-600">
+          <span>Subtotal</span>
+          <span id="subtotal">Rp 0</span>
+        </div>
+        <div class="flex justify-between text-slate-600 items-center">
+          <span>Diskon (%)</span>
+          <input type="number" id="diskon-input" value="0" min="0" max="100" onchange="hitungTotal()" class="w-16 border rounded px-2 py-1 text-right">
+        </div>
+        <div class="flex justify-between font-bold text-lg text-slate-800 border-t pt-2">
+          <span>Total Akhir</span>
+          <span id="total-akhir" class="text-rose-600">Rp 0</span>
+        </div>
+        <div class="flex justify-between text-slate-600 items-center">
+          <span>Uang Bayar</span>
+          <input type="number" id="uang-bayar" onkeyup="hitungKembalian()" placeholder="0" class="w-28 border rounded px-2 py-1 text-right">
+        </div>
+        <div class="flex justify-between text-slate-600 font-semibold">
+          <span>Kembalian</span>
+          <span id="kembalian">Rp 0</span>
+        </div>
+        <button onclick="prosesTransaksi()" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-xl shadow-lg transition">Selesaikan Transaksi & Cetak</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Struk Cetak (Hidden) -->
+  <div id="struk-cetak" class="hidden p-6 font-mono text-xs w-72">
+    <div class="text-center mb-4">
+      <h3 class="font-bold text-sm">GLOWSKIN BEAUTY STORE</h3>
+      <p>Jl. Mawar No. 123, Lumajang</p>
+      <p>==============================</p>
+    </div>
+    <div id="struk-items" class="space-y-1 mb-4"></div>
+    <p>==============================</p>
+    <div class="space-y-1">
+      <div class="flex justify-between"><span>Total:</span><span id="struk-total"></span></div>
+      <div class="flex justify-between"><span>Bayar:</span><span id="struk-bayar"></span></div>
+      <div class="flex justify-between"><span>Kembali:</span><span id="struk-kembali"></span></div>
+    </div>
+    <div class="text-center mt-6">
+      <p>Terima kasih atas kunjungannya!</p>
+      <p>Glow Every Day ✨</p>
+    </div>
+  </div>
+
+  <script>
+    const dataProduk = [
+      { id: 1, nama: 'Gentle Cleansing Gel', kategori: 'Cleanser', harga: 85000, stok: 20 },
+      { id: 2, nama: 'Niacinamide 10% Serum', kategori: 'Serum', harga: 120000, stok: 15 },
+      { id: 3, nama: 'Hydrating Moisturizer', kategori: 'Moisturizer', harga: 110000, stok: 12 },
+      { id: 4, nama: 'UV Shield Sunscreen SPF50', kategori: 'Sunscreen', harga: 95000, stok: 30 },
+      { id: 5, nama: 'Exfoliating Toner AHA/BHA', kategori: 'Cleanser', harga: 135000, stok: 8 },
+      { id: 6, nama: 'Retinol Renewal Serum', kategori: 'Serum', harga: 150000, stok: 10 }
+    ];
+
+    let keranjang = [];
+
+    function renderProduk(items) {
+      const grid = document.getElementById('produk-grid');
+      grid.innerHTML = '';
+      items.forEach(p => {
+        grid.innerHTML += `
+          <div class="bg-white p-4 rounded-xl shadow-sm border hover:shadow-md transition">
+            <span class="text-xs font-semibold px-2 py-1 bg-rose-50 text-rose-500 rounded-full">${p.kategori}</span>
+            <h3 class="font-bold text-slate-800 mt-2">${p.nama}</h3>
+            <p class="text-rose-600 font-bold mt-1">Rp ${p.harga.toLocaleString('id-ID')}</p>
+            <button onclick="tambahKeKeranjang(${p.id})" class="mt-3 w-full bg-slate-800 hover:bg-slate-900 text-white text-xs py-2 rounded-lg">
+              <i class="fas fa-plus mr-1"></i> Tambah
+            </button>
+          </div>
+        `;
+      });
+    }
+
+    function tambahKeKeranjang(id) {
+      const produk = dataProduk.find(p => p.id === id);
+      const itemInCart = keranjang.find(item => item.id === id);
+
+      if (itemInCart) {
+        itemInCart.qty += 1;
+      } else {
+        keranjang.push({ ...produk, qty: 1 });
+      }
+      renderKeranjang();
+    }
+
+    function renderKeranjang() {
+      const list = document.getElementById('keranjang-list');
+      if (keranjang.length === 0) {
+        list.innerHTML = '<p class="text-slate-400 text-center py-8">Keranjang masih kosong</p>';
+      } else {
+        list.innerHTML = keranjang.map(item => `
+          <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
+            <div>
+              <p class="font-bold text-xs text-slate-800">${item.nama}</p>
+              <p class="text-xs text-slate-500">Rp ${item.harga.toLocaleString('id-ID')} x ${item.qty}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="ubahQty(${item.id}, -1)" class="w-6 h-6 bg-slate-200 rounded text-xs font-bold">-</button>
+              <span class="text-xs font-bold">${item.qty}</span>
+              <button onclick="ubahQty(${item.id}, 1)" class="w-6 h-6 bg-slate-200 rounded text-xs font-bold">+</button>
+            </div>
+          </div>
+        `).join('');
+      }
+      hitungTotal();
+    }
+
+    function ubahQty(id, delta) {
+      const item = keranjang.find(i => i.id === id);
+      if (item) {
+        item.qty += delta;
+        if (item.qty <= 0) {
+          keranjang = keranjang.filter(i => i.id !== id);
+        }
+      }
+      renderKeranjang();
+    }
+
+    function hitungTotal() {
+      const subtotal = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+      const diskon = parseFloat(document.getElementById('diskon-input').value) || 0;
+      const totalAkhir = subtotal - (subtotal * (diskon / 100));
+
+      document.getElementById('subtotal').innerText = `Rp ${subtotal.toLocaleString('id-ID')}`;
+      document.getElementById('total-akhir').innerText = `Rp ${totalAkhir.toLocaleString('id-ID')}`;
+      hitungKembalian();
+    }
+
+    function hitungKembalian() {
+      const subtotal = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+      const diskon = parseFloat(document.getElementById('diskon-input').value) || 0;
+      const totalAkhir = subtotal - (subtotal * (diskon / 100));
+      const bayar = parseFloat(document.getElementById('uang-bayar').value) || 0;
+      const kembalian = bayar - totalAkhir;
+
+      document.getElementById('kembalian').innerText = `Rp ${Math.max(0, kembalian).toLocaleString('id-ID')}`;
+    }
+
+    function filterKategori(kat) {
+      if (kat === 'semua') renderProduk(dataProduk);
+      else renderProduk(dataProduk.filter(p => p.kategori === kat));
+    }
+
+    function filterProduk() {
+      const query = document.getElementById('search-input').value.toLowerCase();
+      renderProduk(dataProduk.filter(p => p.nama.toLowerCase().includes(query)));
+    }
+
+    function prosesTransaksi() {
+      if (keranjang.length === 0) return alert('Keranjang masih kosong!');
+      const subtotal = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+      const diskon = parseFloat(document.getElementById('diskon-input').value) || 0;
+      const totalAkhir = subtotal - (subtotal * (diskon / 100));
+      const bayar = parseFloat(document.getElementById('uang-bayar').value) || 0;
+
+      if (bayar < totalAkhir) return alert('Uang pembayaran kurang!');
+
+      const strukItems = document.getElementById('struk-items');
+      strukItems.innerHTML = keranjang.map(i => `
+        <div class="flex justify-between">
+          <span>${i.nama} x${i.qty}</span>
+          <span>${(i.harga * i.qty).toLocaleString('id-ID')}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('struk-total').innerText = `Rp ${totalAkhir.toLocaleString('id-ID')}`;
+      document.getElementById('struk-bayar').innerText = `Rp ${bayar.toLocaleString('id-ID')}`;
+      document.getElementById('struk-kembali').innerText = document.getElementById('kembalian').innerText;
+
+      window.print();
+      keranjang = [];
+      document.getElementById('uang-bayar').value = '';
+      renderKeranjang();
+    }
+
+    renderProduk(dataProduk);
+  </script>
+</body>
+</html>
